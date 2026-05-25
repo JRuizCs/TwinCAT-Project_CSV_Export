@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<TcEventSources Version="2">
+	<Translations>
+		<Text TxtId="NewEventClass_DisplayText"/>
+		<Text TxtId="This is Alarm call number {0}"/>
+		<Text TxtId="This is message call number {0}"/>
+		<Text TxtId="This is Potentiometer call number {0}"/>
+	</Translations>
+	<Source>
+		<GUID>{CA5813DF-F3CC-4B80-9402-ECC0AC4DA75B}</GUID>
+		<Name>NewEventClass_DisplayText</Name>
+		<Event>
+			<Id>1</Id>
+			<Message>This is Alarm call number {0}</Message>
+		</Event>
+		<Event>
+			<Id>2</Id>
+			<Message>This is message call number {0}</Message>
+		</Event>
+		<Event>
+			<Id>3</Id>
+			<Message>This is Potentiometer call number {0}</Message>
+		</Event>
+	</Source>
+</TcEventSources>

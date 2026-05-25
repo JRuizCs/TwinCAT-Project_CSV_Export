@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="MAIN" Id="{51a88e47-3697-49d0-8a5a-2b9726587717}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+
+	// Flag para el control del primer ciclo de escaneo (inicialización)
+	xInit					:BOOL:=TRUE;
+	
+	// Instancias para la gestión de alarmas y mensajes del sistema
+	fbAlarm					:FB_TcAlarm;
+	fbMsg					:FB_TcMessage;	
+	fbPotentiometerMsg		:FB_TcMessage; // Mensaje específico para el registro del potenciómetro
+
+	// Variables para la generación automática de eventos de prueba
+	xCreateLogEntries		:BOOL;               			
+	tonPulse				:TON;           	    	
+	iCnt					:INT;
+	
+	// Variables asociadas al hardware y lectura del potenciómetro
+	fbDeviceInfo			:FB_GetDeviceIdentificationEx;
+	xTriggerInput			:BOOL;         // Entrada física digital para el disparo del registro
+	rtTrigger				:R_TRIG;       // Detector de flanco de subida para la entrada digital
+	iPotentiometerValue		AT %I* :INT;          // Valor analógico actual del potenciómetro
+	
+	// Variables de configuración de rutas y archivos de exportación
+	sExportPath				:STRING(255);
+	sFullPathName			:STRING(255);
+	xExportLog				:BOOL;
+	
+	// Tipos enumerados para el control de la secuencia y filtrado
+	FilterExample			:(NONE,OnlyMsg,OnlyAlarm,Complex):=OnlyAlarm;	                    	
+	ExportStep				:(IDEL,SetFilters,Export);
+	
+	// Componentes globales del TwinCAT Event Logger
+	fbTcEventLogger			:FB_TcEventLogger;
+	fbCsvExportSetting		:FB_TcEventCsvExportSettings;
+	fbExportFilter			:FB_TcEventFilter;
+	hrDebug					:HRESULT;
+	
+	// Variables para la gestión y formateo de la marca de tiempo
+	TimeSource				:(SystemTime,LocalSystemTime);
+	fbGetTime				:FB_LocalSystemTime;
+	dtNow					:DT;
+	sNow					:STRING;
+	dtFilterTimeGT			:DT;
+
+	// Diagnóstico del proceso de exportación
+	xExportError			:BOOL;
+	hrExportErrorCode		:HRESULT;
+	iExportBusyCnt			:UDINT;
+	
+	// Variables para el vaciado de registros del sistema
+	xClearLoggedEvents		:BOOL;
+	xClearLoggedEventsError :BOOL;
+	hrClearLoggedEventsErrorCode :HRESULT;
+	iBusyClearing			:BOOL;
+END_VAR
+VAR CONSTANT
+	// Constantes de caracteres utilizadas para el formateo de cadenas de texto
+	sDT						:STRING(3):='DT#';
+	sColon					:STRING(1):=':';
+	sUnderScope				:STRING(1):='_';
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Inicialización de componentes
+IF xInit THEN
+	xInit:=FALSE;
+	
+	fbAlarm.CreateEx(TC_EVENTS.MyEvents.Alarm,FALSE,0);
+	fbMsg.CreateEx(TC_EVENTS.MyEvents.Msg,0);
+	fbPotentiometerMsg.CreateEx(TC_EVENTS.MyEvents.PotentiometerLog,0);
+	
+	fbDeviceInfo(bExecute:=TRUE);
+END_IF
+
+fbDeviceInfo();
+
+IF NOT fbDeviceInfo.bError THEN
+	fbDeviceInfo.bExecute:=FALSE;
+END_IF
+
+
+// Registro de potenciómetro por entrada digital
+rtTrigger(CLK := xTriggerInput);
+
+IF rtTrigger.Q THEN
+	fbPotentiometerMsg.ipArguments.Clear().AddInt(iPotentiometerValue);
+	fbPotentiometerMsg.Send(0);
+	xTriggerInput := False;
+END_IF
+
+
+// Generación de eventos de prueba
+tonPulse(IN:=NOT tonPulse.Q AND xCreateLogEntries, PT:=T#200MS);
+
+IF tonPulse.Q THEN
+	iCnt:=iCnt+1;
+	
+	IF fbAlarm.bRaised THEN
+		fbAlarm.Clear(0,TRUE);
+	END_IF
+	
+	fbAlarm.ipArguments.Clear().AddInt(iCnt);
+	fbAlarm.Raise(0);
+	
+	fbMsg.ipArguments.Clear().AddInt(iCnt);
+	fbMsg.Send(0);
+END_IF
+
+IF iCnt>=10 THEN
+	xCreateLogEntries	:=FALSE;
+	iCnt				:=0;
+END_IF
+
+
+// Gestión de tiempo del sistema y formato de cadena
+dtNow	:= FILETIME64_TO_DT(F_GetSystemTime());	
+sNow	:= DT_TO_STRING(dtNow);
+
+FindAndDelete(pSrcString:= ADR(sNow),ADR(sDT),ADR(sNow),SIZEOF(sNow));
+FindAndReplace(pSrcString:= ADR(sNow),pDeleteString:=ADR(sColon),pInsertString:=ADR(sUnderScope),pDstString:=ADR(sNow),nDstSize:=SIZEOF(sNow));
+	
+
+// Máquina de estados: Exportación a CSV
+CASE ExportStep OF
+	
+	IDEL:
+		IF xExportLog THEN
+			xExportLog 		:=FALSE;	
+			ExportStep		:=SetFilters;		
+		END_IF	
+	
+	SetFilters:	
+		// Definición de la ruta según el sistema operativo detectado
+		IF fbDeviceInfo.stDevIdent.strImageOsName = 'Windows CE' THEN
+			sExportPath:='\Hard Disk\TwinCAT\3.1\Boot\';
+		ELSIF FIND(fbDeviceInfo.stDevIdent.strImageOsName,'Windows 10')>0 THEN
+			sExportPath:='C:\Users\Administrator\Documents\CSV\';
+		ELSIF fbDeviceInfo.stDevIdent.strImageOsName='TC/BSD' THEN
+			sExportPath:='/usr/local/etc/TwinCAT/3.1/Boot/';
+		END_IF
+		
+		sFullPathName	:=CONCAT(sExportPath,CONCAT(CONCAT('LogExport',sNow),'.csv'));		
+
+		fbCsvExportSetting.Clear();
+		fbCsvExportSetting.sDelimiter:=',';
+		
+		fbCsvExportSetting.AddField(eType:=TcEventField.EventText, 'Event Text', '', );
+		
+		fbCsvExportSetting.AddField(eType:=TcEventField.TimeRaised, 'Time Raised', '', );
+		fbCsvExportSetting.AddField(eType:=TcEventField.TimeConfirmed, 'Time Confirmed', '', );
+		fbCsvExportSetting.AddField(eType:=TcEventField.TimeCleared, 'Time Cleared', '', );
+		fbCsvExportSetting.AddField(eType:=TcEventField.SeverityLevel, 'Severity', '', );	
+		fbCsvExportSetting.AddField(eType:=TcEventField.SourceName, 'Source', '', );		
+		fbCsvExportSetting.AddFilter(fbExportFilter); 
+		
+		FilterExample := OnlyMsg;
+	
+		CASE FilterExample OF
+			NONE:
+				fbExportFilter.Clear();
+			OnlyMsg:
+				fbExportFilter.Clear().IsMessage();
+			OnlyAlarm:
+				fbExportFilter.Clear().IsAlarm();		
+			Complex:
+				fbExportFilter.Clear().IsAlarm().AND_OP().TimeRaised.GreaterThan(DT_TO_FILETIME64(dtFilterTimeGT));
+		END_CASE
+
+		iExportBusyCnt	:=0;
+		ExportStep		:=Export;
+		
+	Export:
+		// Ejecución de la exportación asíncrona
+		IF fbTcEventLogger.ExportLoggedEvents(	sFileName		 :=sFullPathName ,
+		 										ipExportSettings :=fbCsvExportSetting , 
+												bError			 =>xExportError , 
+												hrErrorCode		 =>hrExportErrorCode ) 
+		THEN
+			ExportStep:=IDEL;
+		ELSE
+			iExportBusyCnt:=iExportBusyCnt+1;
+		END_IF
+		
+END_CASE
+
+
+// Vaciado de registros de eventos
+IF xClearLoggedEvents THEN
+	fbTcEventLogger.ClearAllAlarms(0,TRUE);
+	
+	IF fbTcEventLogger.ClearLoggedEvents(ipClearSettings:=0 , bError=>xClearLoggedEventsError , hrErrorCode=>hrClearLoggedEventsErrorCode )THEN
+		xClearLoggedEvents	:=FALSE;
+		iBusyClearing		:=FALSE;
+	ELSE
+		iBusyClearing		:=TRUE;
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

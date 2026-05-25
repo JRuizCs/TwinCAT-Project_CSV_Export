@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<TcEventSources Version="2">
+	<Source>
+		<GUID>{CA5813DF-F3CC-4B80-9402-ECC0AC4DA75B}</GUID>
+		<Name LcId="1033">NewEventClass_DisplayText</Name>
+		<Event>
+			<Id>1</Id>
+			<Message LcId="1033">This is Alarm call number {0}</Message>
+		</Event>
+		<Event>
+			<Id>2</Id>
+			<Message LcId="1033">This is message call number {0}</Message>
+		</Event>
+		<Event>
+			<Id>3</Id>
+			<Message LcId="1033">This is Potentiometer call number {0}</Message>
+		</Event>
+	</Source>
+</TcEventSources>

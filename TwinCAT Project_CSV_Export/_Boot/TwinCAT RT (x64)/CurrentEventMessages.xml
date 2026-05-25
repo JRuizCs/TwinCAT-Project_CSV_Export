@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<TcEventSources Version="2">
+	<Translations>
+		<Text TxtId="Channel is not in overload anymore">
+			<Text LcId="1031">Kanal ist nicht mehr überlastet</Text>
+		</Text>
+		<Text TxtId="Channel overload (Channel {0})">
+			<Text LcId="1031">Kanalüberlastung (Kanal {0})</Text>
+		</Text>
+		<Text TxtId="Channel {0} is not in overload anymoret">
+			<Text LcId="1031">Kanal {0} ist nicht mehr überlastet</Text>
+		</Text>
+		<Text TxtId="EL4374 2Ch. Ana. Input, 2Ch. Ana. Output, +/-10V, +/-20mA, 16 Bit">
+			<Text LcId="1031">EL4374 2K. Ana.Eingang, 2K. Ana. Ausgang, +/-10V, +/-20mA, 16 Bit</Text>
+		</Text>
+		<Text TxtId="Hardware fault ({0})">
+			<Text LcId="1031">Hardwarefehler ({0})</Text>
+		</Text>
+		<Text TxtId="NewEventClass_DisplayText"/>
+		<Text TxtId="No error">
+			<Text LcId="1031">kein Fehler</Text>
+		</Text>
+		<Text TxtId="No overtemperature anymore">
+			<Text LcId="1031">Gerätetemperatur ist wieder OK</Text>
+		</Text>
+		<Text TxtId="Potentiometer Value {0}"/>
+		<Text TxtId="Range error of channel {0}">
+			<Text LcId="1031">Messbereichsfehler des Kanals {0}</Text>
+		</Text>
+		<Text TxtId="Supply voltage OK">
+			<Text LcId="1031">Versorgungsspannung OK</Text>
+		</Text>
+		<Text TxtId="Supply voltage to low">
+			<Text LcId="1031">Versorgungsspannung zu klein</Text>
+		</Text>
+		<Text TxtId="Terminal-Overtemperature">
+			<Text LcId="1031">Klemmen-Übertemperatur</Text>
+		</Text>
+		<Text TxtId="This is Alarm call number {0}"/>
+		<Text TxtId="This is message call number {0}"/>
+	</Translations>
+	<Source>
+		<GUID>{28111931-0002-0000-5230-161100001200}</GUID>
+		<Name>EL4374 2Ch. Ana. Input, 2Ch. Ana. Output, +/-10V, +/-20mA, 16 Bit</Name>
+		<Event>
+			<Id>1</Id>
+			<Message>No error</Message>
+		</Event>
+		<Event>
+			<Id>4480</Id>
+			<Message>Supply voltage OK</Message>
+		</Event>
+		<Event>
+			<Id>5895</Id>
+			<Message>Channel is not in overload anymore</Message>
+		</Event>
+		<Event>
+			<Id>5896</Id>
+			<Message>Channel {0} is not in overload anymoret</Message>
+		</Event>
+		<Event>
+			<Id>5902</Id>
+			<Message>No overtemperature anymore</Message>
+		</Event>
+		<Event>
+			<Id>16641</Id>
+			<Message>Terminal-Overtemperature</Message>
+		</Event>
+		<Event>
+			<Id>33092</Id>
+			<Message>Hardware fault ({0})</Message>
+		</Event>
+		<Event>
+			<Id>34305</Id>
+			<Message>Supply voltage to low</Message>
+		</Event>
+		<Event>
+			<Id>34567</Id>
+			<Message>Channel overload (Channel {0})</Message>
+		</Event>
+		<Event>
+			<Id>34570</Id>
+			<Message>Range error of channel {0}</Message>
+		</Event>
+		<Property>
+			<Name>DisplayTxtId</Name>
+			<Value>true</Value>
+		</Property>
+	</Source>
+	<Source>
+		<GUID>{C4E23CC4-330F-4811-A0A3-E912233F197C}</GUID>
+		<Name>NewEventClass_DisplayText</Name>
+		<Event>
+			<Id>1</Id>
+			<Message>This is Alarm call number {0}</Message>
+		</Event>
+		<Event>
+			<Id>2</Id>
+			<Message>This is message call number {0}</Message>
+		</Event>
+		<Event>
+			<Id>3</Id>
+			<Message>Potentiometer Value {0}</Message>
+		</Event>
+	</Source>
+</TcEventSources>
